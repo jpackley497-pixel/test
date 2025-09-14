@@ -1,5 +1,5 @@
-# Use Node 20
-FROM node:20
+# Stage 1: Build
+FROM node:20 AS build
 
 # Set working directory
 WORKDIR /app
@@ -19,6 +19,23 @@ COPY . .
 # Build the project
 RUN pnpm run build
 
-# Serve the built files using a lightweight server
+# Stage 2: Serve
+FROM node:20-alpine
+
+# Install a lightweight static server
 RUN npm install -g serve
-CMD ["serve", "-s", "dist", "-l", "3000"]
+
+# Copy built files from previous stage
+COPY --from=build /app/dist /app/dist
+
+# Set working directory
+WORKDIR /app
+
+# Use Koyeb's port environment variable
+ENV PORT=$PORT
+
+# Expose the port
+EXPOSE $PORT
+
+# Command to start the server
+CMD ["sh", "-c", "serve -s dist -l $PORT"]
